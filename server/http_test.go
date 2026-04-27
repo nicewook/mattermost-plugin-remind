@@ -3,8 +3,8 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
@@ -54,8 +54,8 @@ func TestHandleDialog(t *testing.T) {
 		api.On("LogDebug", mock.Anything, mock.Anything, mock.Anything).Maybe()
 		api.On("LogError", mock.Anything, mock.Anything, mock.Anything).Maybe()
 		api.On("LogInfo", mock.Anything).Maybe()
-		api.On("KVGet", string(fmt.Sprintf("%v", testTime))).Return(stringOccurrences, nil)
-		api.On("KVGet", user.Username).Return(stringReminders, nil)
+		api.On("KVGet", occurrenceStoreKey(testTime)).Return(stringOccurrences, nil)
+		api.On("KVGet", reminderStoreKey(user.Username)).Return(stringReminders, nil)
 		api.On("KVSet", mock.Anything, mock.Anything).Return(nil)
 		api.On("GetUser", mock.Anything).Return(user, nil)
 		api.On("GetUserByUsername", mock.Anything).Return(user, nil)
@@ -134,7 +134,7 @@ func TestHandleViewEphmeral(t *testing.T) {
 		api.On("LogInfo", mock.Anything).Maybe()
 		api.On("GetUser", mock.Anything).Return(user, nil)
 		api.On("GetUserByUsername", mock.Anything).Return(user, nil)
-		api.On("KVGet", user.Username).Return(stringReminders, nil)
+		api.On("KVGet", reminderStoreKey(user.Username)).Return(stringReminders, nil)
 		api.On("CreatePost", mock.Anything).Maybe()
 		api.On("SendEphemeralPost", mock.Anything, mock.Anything).Return(nil)
 
@@ -220,7 +220,7 @@ func TestHandleComplete(t *testing.T) {
 		api.On("UpdatePost", mock.Anything).Return(post, nil)
 		api.On("GetUser", mock.Anything).Return(user, nil)
 		api.On("GetUserByUsername", mock.Anything).Return(user, nil)
-		api.On("KVGet", user.Username).Return(stringReminders, nil)
+		api.On("KVGet", reminderStoreKey(user.Username)).Return(stringReminders, nil)
 		api.On("KVSet", mock.Anything, mock.Anything).Return(nil)
 		api.On("GetDirectChannel", mock.Anything, mock.Anything).Return(channel, nil)
 
@@ -304,7 +304,7 @@ func TestHandleDelete(t *testing.T) {
 		api.On("UpdatePost", mock.Anything).Return(post, nil)
 		api.On("GetUser", mock.Anything).Return(user, nil)
 		api.On("GetUserByUsername", mock.Anything).Return(user, nil)
-		api.On("KVGet", user.Username).Return(stringReminders, nil)
+		api.On("KVGet", reminderStoreKey(user.Username)).Return(stringReminders, nil)
 		api.On("KVSet", mock.Anything, mock.Anything).Return(nil)
 
 		return api
@@ -384,7 +384,7 @@ func TestHandleDeleteEphemeral(t *testing.T) {
 		api.On("LogInfo", mock.Anything).Maybe()
 		api.On("GetUser", mock.Anything).Return(user, nil)
 		api.On("GetUserByUsername", mock.Anything).Return(user, nil)
-		api.On("KVGet", user.Username).Return(stringReminders, nil)
+		api.On("KVGet", reminderStoreKey(user.Username)).Return(stringReminders, nil)
 		api.On("KVSet", mock.Anything, mock.Anything).Return(nil)
 		api.On("UpdateEphemeralPost", mock.Anything, mock.Anything).Return(post)
 
@@ -467,7 +467,7 @@ func TestHandleSnooze(t *testing.T) {
 		api.On("UpdatePost", mock.Anything).Return(post, nil)
 		api.On("GetUser", mock.Anything).Return(user, nil)
 		api.On("GetUserByUsername", mock.Anything).Return(user, nil)
-		api.On("KVGet", user.Username).Return(stringReminders, nil)
+		api.On("KVGet", reminderStoreKey(user.Username)).Return(stringReminders, nil)
 		api.On("KVGet", mock.Anything).Return(stringOccurrences, nil)
 		api.On("KVSet", mock.Anything, mock.Anything).Return(nil)
 
@@ -570,7 +570,7 @@ func TestHandleNextReminders(t *testing.T) {
 		api.On("LogInfo", mock.Anything).Maybe()
 		api.On("GetUser", mock.Anything).Return(user, nil)
 		api.On("GetUserByUsername", mock.Anything).Return(user, nil)
-		api.On("KVGet", user.Username).Return(stringReminders, nil)
+		api.On("KVGet", reminderStoreKey(user.Username)).Return(stringReminders, nil)
 		api.On("UpdateEphemeralPost", mock.Anything, mock.Anything).Return(post)
 
 		return api
@@ -652,7 +652,7 @@ func TestHandleCompleteList(t *testing.T) {
 		api.On("LogInfo", mock.Anything).Maybe()
 		api.On("GetUser", mock.Anything).Return(user, nil)
 		api.On("GetUserByUsername", mock.Anything).Return(user, nil)
-		api.On("KVGet", user.Username).Return(stringReminders, nil)
+		api.On("KVGet", reminderStoreKey(user.Username)).Return(stringReminders, nil)
 		api.On("KVSet", mock.Anything, mock.Anything).Return(nil)
 		api.On("UpdateEphemeralPost", mock.Anything, mock.Anything).Return(post)
 
@@ -733,7 +733,7 @@ func TestHandleViewCompleteList(t *testing.T) {
 		api.On("LogInfo", mock.Anything).Maybe()
 		api.On("GetUser", mock.Anything).Return(user, nil)
 		api.On("GetUserByUsername", mock.Anything).Return(user, nil)
-		api.On("KVGet", user.Username).Return(stringReminders, nil)
+		api.On("KVGet", reminderStoreKey(user.Username)).Return(stringReminders, nil)
 		api.On("UpdateEphemeralPost", mock.Anything, mock.Anything).Return(post)
 
 		return api
@@ -805,7 +805,7 @@ func TestHandleDeleteList(t *testing.T) {
 		api.On("LogInfo", mock.Anything).Maybe()
 		api.On("GetUser", mock.Anything).Return(user, nil)
 		api.On("GetUserByUsername", mock.Anything).Return(user, nil)
-		api.On("KVGet", user.Username).Return(stringReminders, nil)
+		api.On("KVGet", reminderStoreKey(user.Username)).Return(stringReminders, nil)
 		api.On("KVSet", mock.Anything, mock.Anything).Return(nil)
 		api.On("UpdateEphemeralPost", mock.Anything, mock.Anything).Return(post)
 
@@ -888,7 +888,7 @@ func TestHandleDeleteCompleteList(t *testing.T) {
 		api.On("GetUser", mock.Anything).Return(user, nil)
 		api.On("GetUserByUsername", mock.Anything).Return(user, nil)
 		api.On("UpdateEphemeralPost", mock.Anything, mock.Anything).Return(post)
-		api.On("KVGet", user.Username).Return(stringReminders, nil)
+		api.On("KVGet", reminderStoreKey(user.Username)).Return(stringReminders, nil)
 
 		return api
 	}
@@ -967,7 +967,7 @@ func TestHandleSnoozeList(t *testing.T) {
 		api.On("LogInfo", mock.Anything).Maybe()
 		api.On("GetUser", mock.Anything).Return(user, nil)
 		api.On("GetUserByUsername", mock.Anything).Return(user, nil)
-		api.On("KVGet", user.Username).Return(stringReminders, nil)
+		api.On("KVGet", reminderStoreKey(user.Username)).Return(stringReminders, nil)
 		api.On("KVGet", mock.Anything).Return(stringOccurrences, nil)
 		api.On("KVSet", mock.Anything, mock.Anything).Return(nil)
 		api.On("UpdateEphemeralPost", mock.Anything, mock.Anything).Return(post)
@@ -1068,4 +1068,23 @@ func TestHandleCloseList(t *testing.T) {
 		assert.Equal(t, bodyString, "{\"update\":null,\"ephemeral_text\":\"\",\"skip_slack_parsing\":false}")
 
 	})
+}
+
+func TestPostActionRequestValidation(t *testing.T) {
+	p := &Plugin{}
+	p.router = p.InitAPI()
+
+	request := &model.PostActionIntegrationRequest{
+		UserId: "userID1",
+		Context: model.StringInterface{
+			"reminder_id": model.NewId(),
+		},
+	}
+
+	w := httptest.NewRecorder()
+	requestJSON, _ := json.Marshal(request)
+	r := httptest.NewRequest("POST", "/complete", bytes.NewReader(requestJSON))
+	p.ServeHTTP(nil, w, r)
+
+	assert.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
 }

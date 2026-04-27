@@ -597,10 +597,17 @@ func (p *Plugin) findReminder(reminders []Reminder, occurrence Occurrence) Remin
 }
 
 func (p *Plugin) getLastTickTimeWithDefault(defaultValue time.Time) time.Time {
-	bytes, err := p.API.KVGet("LastTickAt")
+	bytes, err := p.API.KVGet(lastTickAtStoreKey)
 	if err != nil {
 		p.API.LogInfo(fmt.Sprintf("Failed to read LastTickAt (%v); returning the default value", err))
 		return defaultValue
+	}
+	if len(bytes) == 0 {
+		bytes, err = p.API.KVGet(legacyLastTickAtKey)
+		if err != nil {
+			p.API.LogInfo(fmt.Sprintf("Failed to read legacy LastTickAt (%v); returning the default value", err))
+			return defaultValue
+		}
 	}
 	if bytes == nil {
 		p.API.LogDebug("LastTickAt is not set; returning the default value")
@@ -618,7 +625,7 @@ func (p *Plugin) getLastTickTimeWithDefault(defaultValue time.Time) time.Time {
 
 func (p *Plugin) setLastTickTime(lastTickAt time.Time) {
 	serializedTime := lastTickAt.Format(time.RFC3339)
-	kvErr := p.API.KVSet("LastTickAt", []byte(serializedTime))
+	kvErr := p.API.KVSet(lastTickAtStoreKey, []byte(serializedTime))
 	if kvErr != nil {
 		p.API.LogDebug("failed stored lastTickAt %s", kvErr)
 	}

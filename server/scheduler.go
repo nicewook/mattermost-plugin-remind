@@ -300,24 +300,41 @@ func (p *Plugin) InteractiveSchedule(triggerId string, user *model.User) {
 }
 
 func (p *Plugin) Run() {
-	p.Stop()
-	if !p.running {
-		p.running = true
-		p.runner()
+	p.schedulerMu.Lock()
+	if p.schedulerStop != nil {
+		p.schedulerMu.Unlock()
+		return
 	}
+
+	stop := make(chan struct{})
+	p.schedulerStop = stop
+	p.schedulerMu.Unlock()
+
+	go p.runner(stop)
 }
 
 func (p *Plugin) Stop() {
-	p.running = false
+	p.schedulerMu.Lock()
+	stop := p.schedulerStop
+	if stop == nil {
+		p.schedulerMu.Unlock()
+		return
+	}
+	p.schedulerStop = nil
+	close(stop)
+	p.schedulerMu.Unlock()
 }
 
-func (p *Plugin) runner() {
-	go func() {
-		<-time.NewTimer(time.Second).C
-		if !p.running {
+func (p *Plugin) runner(stop <-chan struct{}) {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			p.TriggerReminders()
+		case <-stop:
 			return
 		}
-		p.TriggerReminders()
-		p.runner()
-	}()
+	}
 }

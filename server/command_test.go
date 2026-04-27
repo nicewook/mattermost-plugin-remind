@@ -118,7 +118,7 @@ func TestHandleCommand(t *testing.T) {
 			api.On("LogInfo", mock.Anything).Maybe()
 			api.On("GetUser", mock.Anything).Return(user, nil)
 			api.On("GetUserByUsername", mock.Anything).Return(user, nil)
-			api.On("KVGet", user.Username).Return(stringReminders, nil)
+			api.On("KVGet", reminderStoreKey(user.Username)).Return(stringReminders, nil)
 			api.On("SendEphemeralPost", mock.Anything, mock.Anything).Return(post)
 
 			return api
@@ -182,7 +182,7 @@ func TestHandleCommand(t *testing.T) {
 			api.On("LogInfo", mock.Anything).Maybe()
 			api.On("GetUser", mock.Anything).Return(user, nil)
 			api.On("GetUserByUsername", mock.Anything).Return(user, nil)
-			api.On("KVGet", user.Username).Return(stringReminders, nil)
+			api.On("KVGet", reminderStoreKey(user.Username)).Return(stringReminders, nil)
 			api.On("KVGet", mock.Anything).Return(stringOccurrences, nil)
 			api.On("KVSet", mock.Anything, mock.Anything).Return(nil)
 			api.On("SendEphemeralPost", mock.Anything, mock.Anything).Return(post)
@@ -238,8 +238,9 @@ func TestHandleCommand(t *testing.T) {
 			api.On("LogInfo", mock.Anything).Maybe()
 			api.On("GetUser", mock.Anything).Return(user, nil)
 			api.On("SendEphemeralPost", mock.Anything, mock.Anything).Return(nil)
-			api.On("KVGet", user.Username).Return(stringReminders, nil)
-			api.On("KVDelete", user.Username).Return(nil)
+			api.On("KVGet", reminderStoreKey(user.Username)).Return(stringReminders, nil)
+			api.On("KVDelete", reminderStoreKey(user.Username)).Return(nil)
+			api.On("KVDelete", legacyReminderStoreKey(user.Username)).Return(nil)
 			return api
 		}
 

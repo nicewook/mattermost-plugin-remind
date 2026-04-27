@@ -106,7 +106,7 @@ func TestListReminders(t *testing.T) {
 		api.On("LogError", mock.Anything, mock.Anything, mock.Anything).Maybe()
 		api.On("LogInfo", mock.Anything).Maybe()
 		api.On("GetUserByUsername", mock.AnythingOfType("string")).Return(user, nil)
-		api.On("KVGet", "testuser").Return(serializedReminders, nil)
+		api.On("KVGet", reminderStoreKey(user.Username)).Return(serializedReminders, nil)
 		return api
 	}
 

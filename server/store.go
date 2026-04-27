@@ -6,11 +6,26 @@ import (
 	"time"
 )
 
+const (
+	reminderStorePrefix   = "reminder:"
+	occurrenceStorePrefix = "occurrence:"
+	lastTickAtStoreKey    = "scheduler:last_tick"
+	legacyLastTickAtKey   = "LastTickAt"
+)
+
 func reminderStoreKey(username string) string {
+	return reminderStorePrefix + username
+}
+
+func legacyReminderStoreKey(username string) string {
 	return username
 }
 
 func occurrenceStoreKey(t time.Time) string {
+	return occurrenceStorePrefix + t.UTC().Format(time.RFC3339Nano)
+}
+
+func legacyOccurrenceStoreKey(t time.Time) string {
 	return fmt.Sprintf("%v", t)
 }
 
@@ -18,6 +33,12 @@ func (p *Plugin) loadRemindersForUsername(username string) ([]Reminder, error) {
 	bytes, err := p.API.KVGet(reminderStoreKey(username))
 	if err != nil {
 		return nil, err
+	}
+	if len(bytes) == 0 {
+		bytes, err = p.API.KVGet(legacyReminderStoreKey(username))
+		if err != nil {
+			return nil, err
+		}
 	}
 	if len(bytes) == 0 {
 		return []Reminder{}, nil
@@ -48,6 +69,9 @@ func (p *Plugin) deleteRemindersForUsername(username string) error {
 	if appErr := p.API.KVDelete(reminderStoreKey(username)); appErr != nil {
 		return appErr
 	}
+	if appErr := p.API.KVDelete(legacyReminderStoreKey(username)); appErr != nil {
+		return appErr
+	}
 
 	return nil
 }
@@ -56,6 +80,12 @@ func (p *Plugin) loadOccurrencesAt(t time.Time) ([]Occurrence, error) {
 	bytes, err := p.API.KVGet(occurrenceStoreKey(t))
 	if err != nil {
 		return nil, err
+	}
+	if len(bytes) == 0 {
+		bytes, err = p.API.KVGet(legacyOccurrenceStoreKey(t))
+		if err != nil {
+			return nil, err
+		}
 	}
 	if len(bytes) == 0 {
 		return []Occurrence{}, nil

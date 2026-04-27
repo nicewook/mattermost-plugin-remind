@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -23,8 +24,10 @@ type Plugin struct {
 	router    *mux.Router
 	botUserId string
 	trigger   string
-	running   bool
 	emptyTime time.Time
+
+	schedulerMu   sync.Mutex
+	schedulerStop chan struct{}
 
 	ServerConfig *model.Config
 
