@@ -839,7 +839,7 @@ func (p *Plugin) onEN(when string, user *model.User) (times []time.Time, err err
 			day = 7 - (todayWeekDayNum - weekDayNum)
 		} else if weekDayNum == todayWeekDayNum {
 			todayTime := time.Now().In(location)
-			if wallClock.Hour() >= todayTime.Hour() && wallClock.Minute() > todayTime.Minute() {
+			if wallClockAfter(wallClock, todayTime) {
 				day = weekDayNum - todayWeekDayNum
 			} else {
 				day = 7 + (weekDayNum - todayWeekDayNum)
@@ -978,7 +978,7 @@ func (p *Plugin) everyEN(when string, user *model.User) (times []time.Time, err 
 			}
 
 			todayTime := time.Now().In(location)
-			if wallClock.Hour() >= todayTime.Hour() && wallClock.Minute() > todayTime.Minute() {
+			if wallClockAfter(wallClock, todayTime) {
 				if everyOther {
 					day = 1
 				} else {
@@ -1030,7 +1030,7 @@ func (p *Plugin) everyEN(when string, user *model.User) (times []time.Time, err 
 				day = 7 - (todayWeekDayNum - weekDayNum)
 			} else if weekDayNum == todayWeekDayNum {
 				todayTime := time.Now().In(location)
-				if wallClock.Hour() >= todayTime.Hour() && wallClock.Minute() > todayTime.Minute() {
+				if wallClockAfter(wallClock, todayTime) {
 					day = weekDayNum - todayWeekDayNum
 				} else {
 					day = 7 + (weekDayNum - todayWeekDayNum)
@@ -1291,6 +1291,20 @@ func (p *Plugin) formatWhenEN(username string, when string, occurrence string, s
 	}
 	return prefix + t.Format(time.Kitchen) + " " + endDate + "."
 
+}
+
+func wallClockAfter(wallClock time.Time, now time.Time) bool {
+	wallHour, wallMinute, wallSecond := wallClock.Clock()
+	nowHour, nowMinute, nowSecond := now.Clock()
+
+	if wallHour != nowHour {
+		return wallHour > nowHour
+	}
+	if wallMinute != nowMinute {
+		return wallMinute > nowMinute
+	}
+
+	return wallSecond > nowSecond
 }
 
 func (p *Plugin) chooseClosest(user *model.User, chosen *time.Time, dayInterval bool) time.Time {

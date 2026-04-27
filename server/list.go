@@ -18,6 +18,7 @@ func (p *Plugin) ListReminders(user *model.User, channelId string) *model.Post {
 	if len(reminders) == 0 {
 		return &model.Post{
 			ChannelId:     channelId,
+			CreateAt:      model.GetMillis(),
 			PendingPostId: model.NewId() + ":" + fmt.Sprint(model.GetMillis()),
 			UserId:        p.botUserId,
 			Message:       T("no.reminders"),
@@ -60,6 +61,7 @@ func (p *Plugin) ListReminders(user *model.User, channelId string) *model.Post {
 
 	return &model.Post{
 		ChannelId:     channelId,
+		CreateAt:      model.GetMillis(),
 		PendingPostId: model.NewId() + ":" + fmt.Sprint(model.GetMillis()),
 		UserId:        p.botUserId,
 		Props: model.StringInterface{
@@ -120,6 +122,7 @@ func (p *Plugin) UpdateListReminders(userId string, postId string, channelId str
 	post := &model.Post{
 		Id:        postId,
 		ChannelId: channelId,
+		CreateAt:  model.GetMillis(),
 		UserId:    p.botUserId,
 		Props: model.StringInterface{
 			"attachments": attachments,
@@ -591,6 +594,7 @@ func (p *Plugin) ListCompletedReminders(userId string, postId string, channelId 
 	post := &model.Post{
 		Id:        postId,
 		ChannelId: channelId,
+		CreateAt:  model.GetMillis(),
 		Message:   output,
 		Props:     model.StringInterface{},
 	}

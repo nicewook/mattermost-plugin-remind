@@ -827,3 +827,12 @@ func TestFormatWhen(t *testing.T) {
 
 	})
 }
+
+func TestWallClockAfter(t *testing.T) {
+	now := time.Date(2026, time.April, 27, 16, 52, 0, 0, time.UTC)
+
+	assert.True(t, wallClockAfter(time.Date(2026, time.April, 27, 17, 30, 0, 0, time.UTC), now))
+	assert.True(t, wallClockAfter(time.Date(2026, time.April, 27, 16, 53, 0, 0, time.UTC), now))
+	assert.False(t, wallClockAfter(time.Date(2026, time.April, 27, 16, 30, 0, 0, time.UTC), now))
+	assert.False(t, wallClockAfter(time.Date(2026, time.April, 27, 16, 52, 0, 0, time.UTC), now))
+}

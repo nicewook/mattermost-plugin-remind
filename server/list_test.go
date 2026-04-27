@@ -118,6 +118,7 @@ func TestListReminders(t *testing.T) {
 
 		attachments := post.Attachments()
 		assert.NotNil(t, post, "A post must be returned")
+		assert.NotZero(t, post.CreateAt, "The list post must have a creation timestamp")
 		assert.Equal(t, post.ChannelId, originChannel.Id, "The list must be posted to the channel it was requested")
 		assert.Equal(t, len(reminders)+1, len(attachments), "The list must have one attachment per active reminder, plus an attachment for control")
 		assert.Contains(t, attachments[0].Text, T("list.upcoming"), "The first displayed reminders must be upcoming reminders")
