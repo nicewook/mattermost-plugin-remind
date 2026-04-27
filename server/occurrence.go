@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost/server/public/model"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -46,7 +46,7 @@ func (p *Plugin) ClearScheduledOccurrence(reminder Reminder, occurrence Occurren
 	var occurrencesDelta []Occurrence
 	for _, o := range occurrences {
 		if o.ReminderId != reminder.Id {
-			occurrencesDelta = append(occurrencesDelta, occurrence)
+			occurrencesDelta = append(occurrencesDelta, o)
 		}
 	}
 
@@ -79,7 +79,7 @@ func (p *Plugin) deleteSnoozedOccurrence(occurrence Occurrence) {
 	var occurrencesDelta []Occurrence
 	for _, o := range occurrences {
 		if o.Id != occurrence.Id {
-			occurrencesDelta = append(occurrencesDelta, occurrence)
+			occurrencesDelta = append(occurrencesDelta, o)
 		}
 	}
 
@@ -89,7 +89,7 @@ func (p *Plugin) deleteSnoozedOccurrence(occurrence Occurrence) {
 		return
 	}
 
-	kvErr := p.API.KVSet(string(fmt.Sprintf("%v", occurrence.Occurrence)), ro)
+	kvErr := p.API.KVSet(string(fmt.Sprintf("%v", occurrence.Snoozed)), ro)
 	if kvErr != nil {
 		p.API.LogError("failed to store ocurrence %s", kvErr)
 	}
@@ -110,7 +110,7 @@ func (p *Plugin) deleteOccurrence(occurrence Occurrence) {
 	var occurrencesDelta []Occurrence
 	for _, o := range occurrences {
 		if o.Id != occurrence.Id {
-			occurrencesDelta = append(occurrencesDelta, occurrence)
+			occurrencesDelta = append(occurrencesDelta, o)
 		}
 	}
 

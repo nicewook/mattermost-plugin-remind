@@ -1,5 +1,5 @@
 GO ?= $(shell command -v go 2> /dev/null)
-# ensure-> https://goreportcard.com/report/github.com/scottleedavis/mattermost-plugin-remind
+# ensure-> https://goreportcard.com/report/github.com/flexing/mattermost-plugin-remind
 
 NPM ?= $(shell command -v npm 2> /dev/null)
 CURL ?= $(shell command -v curl 2> /dev/null)

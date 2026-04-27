@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mattermost/mattermost-server/v6/model"
-	"github.com/mattermost/mattermost-server/v6/plugin/plugintest"
+	"github.com/mattermost/mattermost/server/public/model"
+	"github.com/mattermost/mattermost/server/public/plugin/plugintest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -177,6 +177,7 @@ func TestTriggerRemindersForTick(t *testing.T) {
 		stringReminders, _ := json.Marshal(reminders)
 		api.On("KVGet", user.Username).Return(stringReminders, nil)
 		api.On("GetChannelByName", mock.Anything, mock.Anything, mock.Anything).Return(channel, nil)
+		api.On("GetChannelMember", mock.Anything, mock.Anything).Return(&model.ChannelMember{}, nil)
 		defer api.AssertExpectations(t)
 
 		p := &Plugin{}
@@ -263,6 +264,7 @@ func TestTriggerRemindersForTick(t *testing.T) {
 		api.On("GetUserByUsername", mock.AnythingOfType("string")).Return(user, nil)
 		api.On("CreatePost", mock.Anything).Return(post, nil)
 		api.On("GetChannelByName", mock.Anything, mock.Anything, mock.Anything).Return(channel, nil)
+		api.On("GetChannelMember", mock.Anything, mock.Anything).Return(&model.ChannelMember{}, nil)
 		api.On("KVGet", user.Username).Return(stringReminders, nil)
 		api.On("KVGet", mock.Anything).Return(stringOccurrences, nil)
 		api.On("KVSet", mock.Anything, mock.Anything).Return(nil)

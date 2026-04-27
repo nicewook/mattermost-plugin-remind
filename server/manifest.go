@@ -6,6 +6,6 @@ var manifest = struct {
 	ID      string
 	Version string
 }{
-	ID:      "com.github.scottleedavis.mattermost-plugin-remind",
-	Version: "0.4.5",
+	ID:      "ai.flexing.mattermost-plugin-remind",
+	Version: "1.0.0",
 }

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost/server/public/model"
 )
 
 type Reminder struct {
@@ -303,11 +303,12 @@ func (p *Plugin) TriggerRemindersForTick(tickAt time.Time) {
 
 				if cErr != nil {
 					p.API.LogError("fail to get channel " + fmt.Sprintf("%v", cErr))
+					p.notifyReminderOwner(user, "Failed to send reminder to "+reminder.Target+": channel was not found.")
 				} else {
-
-					var messageParameters = map[string]interface{}{
-						"FinalTarget": "@" + user.Username,
-						"Message":     reminder.Message,
+					if err := p.ensureBotChannelMember(channel.Id); err != nil {
+						p.API.LogError("failed to add remindbot to channel " + fmt.Sprintf("%v", err))
+						p.notifyReminderOwner(user, "Failed to send reminder to "+reminder.Target+": remindbot could not join the channel.")
+						continue
 					}
 
 					interactivePost := model.Post{
@@ -315,12 +316,14 @@ func (p *Plugin) TriggerRemindersForTick(tickAt time.Time) {
 						PendingPostId: model.NewId() + ":" + fmt.Sprint(model.GetMillis()),
 						UserId:        p.botUserId,
 						Type:          model.PostCustomTypePrefix + "reminder",
-						Message:       T("reminder.message", messageParameters),
+						Message:       reminder.Message,
 						Props:         model.StringInterface{},
 					}
 
 					if _, pErr := p.API.CreatePost(&interactivePost); pErr != nil {
 						p.API.LogError(fmt.Sprintf("%v", pErr))
+						p.notifyReminderOwner(user, "Failed to send reminder to "+reminder.Target+": Mattermost rejected the channel post.")
+						continue
 					}
 
 					if occurrence.Repeat != "" {
@@ -334,6 +337,35 @@ func (p *Plugin) TriggerRemindersForTick(tickAt time.Time) {
 
 	}
 
+}
+
+func (p *Plugin) ensureBotChannelMember(channelID string) error {
+	if _, err := p.API.GetChannelMember(channelID, p.botUserId); err == nil {
+		return nil
+	}
+
+	_, err := p.API.AddChannelMember(channelID, p.botUserId)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *Plugin) notifyReminderOwner(user *model.User, message string) {
+	channel, err := p.API.GetDirectChannel(p.botUserId, user.Id)
+	if err != nil {
+		p.API.LogError("failed to create direct channel for reminder failure notification " + err.Error())
+		return
+	}
+
+	if _, err := p.API.CreatePost(&model.Post{
+		ChannelId: channel.Id,
+		UserId:    p.botUserId,
+		Message:   message,
+	}); err != nil {
+		p.API.LogError("failed to send reminder failure notification " + err.Error())
+	}
 }
 
 func (p *Plugin) GetReminder(userId string, reminderId string) Reminder {

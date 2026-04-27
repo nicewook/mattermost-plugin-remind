@@ -3,7 +3,7 @@ package main
 import (
 	"time"
 
-	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/nicksnyder/go-i18n/i18n"
 )
 
@@ -21,11 +21,12 @@ func (p *Plugin) translation(user *model.User) (i18n.TranslateFunc, string) {
 func (p *Plugin) location(user *model.User) *time.Location {
 	tz := user.GetPreferredTimezone()
 	if tz == "" {
-		// Use server's timezone
 		return time.Now().Location()
-	} else {
-		location, _ := time.LoadLocation(tz)
-		return location
 	}
 
+	location, err := time.LoadLocation(tz)
+	if err != nil {
+		return time.Now().Location()
+	}
+	return location
 }

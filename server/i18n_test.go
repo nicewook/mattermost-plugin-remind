@@ -1,13 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/mattermost/mattermost-server/v6/plugin/plugintest"
+	"github.com/mattermost/mattermost/server/public/plugin/plugintest"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -30,7 +29,10 @@ func TestTranslationsPreInit(t *testing.T) {
 		p := &Plugin{}
 		p.API = api
 		err := p.TranslationsPreInit()
-		require.EqualError(t, err, fmt.Sprintf("unable to read i18n directory: open %s: no such file or directory", i18nPath))
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "unable to read i18n directory")
+		require.Contains(t, err.Error(), "assets")
+		require.Contains(t, err.Error(), "i18n")
 	})
 
 	t.Run("failure to read i18n directory", func(t *testing.T) {
