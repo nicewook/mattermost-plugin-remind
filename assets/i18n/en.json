@@ -89,7 +89,7 @@
   },
   {
     "id": "help.response",
-    "translation": "Use `/remind` to set reminders for yourself, someone else, or for an entire channel. Some examples include:\n* `/remind me to eat lunch at 1pm every day`\n* `/remind me to pick up the kids on June 1st `\n* `/remind ~marketing-team to give a status update everyday at 8am`\n* `/remind @jessica about the client meeting in 30 minutes`\n* `/remind @peter \"Please review the design draft\" tomorrow`\nOr, use `/remind list` to see the list of all your reminders.\n"
+    "translation": "**Remind usage**\n\nUse `/remind [target] [message] [time]` to schedule a reminder.\n\n**Targets**\n* `me` sends a direct reminder to you.\n* `@username` sends a direct reminder to another user.\n* `~channel-name` posts only the reminder message in that channel.\n\n**Time examples**\n* `in 10 seconds`, `in 30 minutes`, `in 2 hours`, `in 3 days`\n* `at 1pm`, `at 09:30`, `at noon`, `at midnight`\n* `tomorrow at 9am`, `on monday at 10am`, `on June 1st at 8am`\n* `every day at 9am`, `every monday at 10am`, `weekdays at 9am`\n\n**Examples**\n* `/remind me plugin test in 10 seconds`\n* `/remind me submit the report tomorrow at 9am`\n* `/remind @jessica client meeting in 30 minutes`\n* `/remind ~aicenter plugin test in 10 seconds`\n* `/remind ~marketing-team status update every day at 8am`\n\n**Manage reminders**\n* `/remind list` shows your reminders.\n* Use the buttons on reminder messages to delete, complete, or snooze when available.\n"
   },
   {
   	"id": "schedule.response",

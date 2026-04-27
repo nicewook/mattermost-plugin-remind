@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -32,14 +31,9 @@ type Occurrence struct {
 
 func (p *Plugin) ClearScheduledOccurrence(reminder Reminder, occurrence Occurrence) {
 
-	bytes, err := p.API.KVGet(string(fmt.Sprintf("%v", occurrence.Occurrence)))
+	occurrences, err := p.loadOccurrencesAt(occurrence.Occurrence)
 	if err != nil {
 		p.API.LogError("failed KVGet %s", err)
-		return
-	}
-
-	var occurrences []Occurrence
-	if roErr := json.Unmarshal(bytes, &occurrences); roErr != nil {
 		return
 	}
 
@@ -50,29 +44,18 @@ func (p *Plugin) ClearScheduledOccurrence(reminder Reminder, occurrence Occurren
 		}
 	}
 
-	ro, oErr := json.Marshal(occurrencesDelta)
-	if oErr != nil {
+	if oErr := p.storeOccurrencesAt(occurrence.Occurrence, occurrencesDelta); oErr != nil {
 		p.API.LogError("failed to marshal reminderOccurrences %s", occurrence.Id)
 		return
-	}
-
-	kvErr := p.API.KVSet(string(fmt.Sprintf("%v", occurrence.Occurrence)), ro)
-	if kvErr != nil {
-		p.API.LogError("failed to store occurence %s", kvErr)
 	}
 
 }
 
 func (p *Plugin) deleteSnoozedOccurrence(occurrence Occurrence) {
 
-	bytes, err := p.API.KVGet(string(fmt.Sprintf("%v", occurrence.Snoozed)))
+	occurrences, err := p.loadOccurrencesAt(occurrence.Snoozed)
 	if err != nil {
 		p.API.LogError("failed KVGet %s", err)
-		return
-	}
-
-	var occurrences []Occurrence
-	if roErr := json.Unmarshal(bytes, &occurrences); roErr != nil {
 		return
 	}
 
@@ -83,27 +66,16 @@ func (p *Plugin) deleteSnoozedOccurrence(occurrence Occurrence) {
 		}
 	}
 
-	ro, oErr := json.Marshal(occurrencesDelta)
-	if oErr != nil {
+	if oErr := p.storeOccurrencesAt(occurrence.Snoozed, occurrencesDelta); oErr != nil {
 		p.API.LogError("failed to marshal reminderOccurrences %s", occurrence.Id)
 		return
-	}
-
-	kvErr := p.API.KVSet(string(fmt.Sprintf("%v", occurrence.Snoozed)), ro)
-	if kvErr != nil {
-		p.API.LogError("failed to store ocurrence %s", kvErr)
 	}
 }
 
 func (p *Plugin) deleteOccurrence(occurrence Occurrence) {
-	bytes, err := p.API.KVGet(string(fmt.Sprintf("%v", occurrence.Occurrence)))
+	occurrences, err := p.loadOccurrencesAt(occurrence.Occurrence)
 	if err != nil {
 		p.API.LogError("failed KVGet %s", err)
-		return
-	}
-
-	var occurrences []Occurrence
-	if roErr := json.Unmarshal(bytes, &occurrences); roErr != nil {
 		return
 	}
 
@@ -114,15 +86,9 @@ func (p *Plugin) deleteOccurrence(occurrence Occurrence) {
 		}
 	}
 
-	ro, oErr := json.Marshal(occurrencesDelta)
-	if oErr != nil {
+	if oErr := p.storeOccurrencesAt(occurrence.Occurrence, occurrencesDelta); oErr != nil {
 		p.API.LogError("failed to marshal reminderOccurrences %s", occurrence.Id)
 		return
-	}
-
-	kvErr := p.API.KVSet(string(fmt.Sprintf("%v", occurrence.Occurrence)), ro)
-	if kvErr != nil {
-		p.API.LogError("failed to store occurrence %s", kvErr)
 	}
 }
 
@@ -269,28 +235,20 @@ func (p *Plugin) isRepeating(request *ReminderRequest) bool {
 
 func (p *Plugin) upsertOccurrence(occurrence *Occurrence) []Occurrence {
 
-	bytes, err := p.API.KVGet(string(fmt.Sprintf("%v", occurrence.Occurrence)))
+	occurrences, err := p.loadOccurrencesAt(occurrence.Occurrence)
 	if err != nil {
 		p.API.LogError("failed KVGet %s", err)
 		return nil
 	}
 
-	var occurrences []Occurrence
-	roErr := json.Unmarshal(bytes, &occurrences)
-	if roErr != nil {
+	if len(occurrences) == 0 {
 		p.API.LogDebug("new occurrence " + string(fmt.Sprintf("%v", occurrence.Occurrence)))
 	}
 
 	occurrences = append(occurrences, *occurrence)
-	ro, roErr := json.Marshal(occurrences)
-	if roErr != nil {
+	if roErr := p.storeOccurrencesAt(occurrence.Occurrence, occurrences); roErr != nil {
 		p.API.LogError("failed to marshal reminderOccurrences %s", occurrence.Id)
 		return occurrences
-	}
-
-	kvErr := p.API.KVSet(string(fmt.Sprintf("%v", occurrence.Occurrence)), ro)
-	if kvErr != nil {
-		p.API.LogDebug("failed to store occurence %s", kvErr)
 	}
 
 	return occurrences
@@ -299,29 +257,22 @@ func (p *Plugin) upsertOccurrence(occurrence *Occurrence) []Occurrence {
 
 func (p *Plugin) upsertSnoozedOccurrence(occurrence *Occurrence) []Occurrence {
 
-	bytes, err := p.API.KVGet(string(fmt.Sprintf("%v", occurrence.Snoozed)))
+	occurrences, err := p.loadOccurrencesAt(occurrence.Snoozed)
 	if err != nil {
 		p.API.LogError("failed KVGet %s", err)
 		return nil
 	}
 
-	var occurrences []Occurrence
-	roErr := json.Unmarshal(bytes, &occurrences)
-	if roErr != nil {
+	if len(occurrences) == 0 {
 		p.API.LogDebug("new snoozed occurrence " + string(fmt.Sprintf("%v", occurrence.Snoozed)))
 	}
 
 	occurrences = append(occurrences, *occurrence)
-	ro, roErr := json.Marshal(occurrences)
-	if roErr != nil {
+	if roErr := p.storeOccurrencesAt(occurrence.Snoozed, occurrences); roErr != nil {
 		p.API.LogError("failed to marshal reminderOccurrences %s", occurrence.Id)
 		return occurrences
 	}
 
-	kvErr := p.API.KVSet(string(fmt.Sprintf("%v", occurrence.Snoozed)), ro)
-	if kvErr != nil {
-		p.API.LogDebug("failed snoozed occurrence %s", kvErr)
-	}
 	return occurrences
 
 }

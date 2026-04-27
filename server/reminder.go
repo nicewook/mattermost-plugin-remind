@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -74,19 +73,13 @@ func (p *Plugin) TriggerRemindersForTick(tickAt time.Time) {
 	p.API.LogDebug("Trigger reminders for " + fmt.Sprintf("%v", tickAt))
 
 	// Look up reminders to be triggered for the tick time
-	bytes, err := p.API.KVGet(string(fmt.Sprintf("%v", tickAt)))
+	occurrences, err := p.loadOccurrencesAt(tickAt)
 	if err != nil {
 		p.API.LogError("failed KVGet %s", err)
+		return
 	}
 
-	if string(bytes[:]) != "" {
-
-		var occurrences []Occurrence
-		oErr := json.Unmarshal(bytes, &occurrences)
-		if oErr != nil {
-			p.API.LogError("Failed to unmarshal reminder occurrences " + fmt.Sprintf("%v", oErr))
-			return
-		}
+	if len(occurrences) != 0 {
 		hostname, _ := os.Hostname()
 
 		for _, occurrence := range occurrences {
@@ -99,15 +92,9 @@ func (p *Plugin) TriggerRemindersForTick(tickAt time.Time) {
 				p.API.LogError("failed to query user %s", user.Id)
 				continue
 			}
-			bytes, bErr := p.API.KVGet(user.Username)
+			reminders, bErr := p.loadRemindersForUsername(user.Username)
 			if bErr != nil {
 				p.API.LogError("failed KVGet %s", bErr)
-				continue
-			}
-			var reminders []Reminder
-			rsErr := json.Unmarshal(bytes, &reminders)
-			if rsErr != nil {
-				p.API.LogError("failed json Unmarshal %s", rsErr)
 				continue
 			}
 
@@ -394,18 +381,12 @@ func (p *Plugin) GetReminders(username string) []Reminder {
 		return []Reminder{}
 	}
 
-	bytes, bErr := p.API.KVGet(user.Username)
-	if bErr != nil {
-		p.API.LogError("failed KVGet " + bErr.Error())
+	reminders, err := p.loadRemindersForUsername(user.Username)
+	if err != nil {
+		p.API.LogError("no reminders for " + user.Username)
 		return []Reminder{}
 	}
 
-	var reminders []Reminder
-	err := json.Unmarshal(bytes, &reminders)
-
-	if err != nil {
-		p.API.LogError("no reminders for " + user.Username)
-	}
 	return reminders
 }
 
@@ -418,15 +399,10 @@ func (p *Plugin) UpdateReminder(userId string, reminder Reminder) error {
 		return uErr
 	}
 
-	bytes, bErr := p.API.KVGet(user.Username)
+	reminders, bErr := p.loadRemindersForUsername(user.Username)
 	if bErr != nil {
 		p.API.LogError("failed KVGet %s", bErr)
 		return bErr
-	}
-
-	var reminders []Reminder
-	if err := json.Unmarshal(bytes, &reminders); err != nil {
-		return err
 	}
 
 	updatedReminders := []Reminder{}
@@ -438,17 +414,11 @@ func (p *Plugin) UpdateReminder(userId string, reminder Reminder) error {
 		}
 	}
 
-	ro, rErr := json.Marshal(updatedReminders)
-
-	if rErr != nil {
+	if rErr := p.storeRemindersForUsername(user.Username, updatedReminders); rErr != nil {
 		p.API.LogError("failed to marshal reminders %s", user.Username)
 		return rErr
 	}
 
-	kvErr := p.API.KVSet(user.Username, ro)
-	if kvErr != nil {
-		p.API.LogDebug("failed store username %s", kvErr)
-	}
 	return nil
 }
 
@@ -461,14 +431,7 @@ func (p *Plugin) UpsertReminder(request *ReminderRequest) error {
 		return uErr
 	}
 
-	bytes, bErr := p.API.KVGet(user.Username)
-	if bErr != nil {
-		p.API.LogError("failed KVGet %s", bErr)
-		return bErr
-	}
-
-	var reminders []Reminder
-	err := json.Unmarshal(bytes, &reminders)
+	reminders, err := p.loadRemindersForUsername(user.Username)
 	if err != nil {
 		p.API.LogDebug("new reminder " + user.Username)
 	}
@@ -488,16 +451,12 @@ func (p *Plugin) UpsertReminder(request *ReminderRequest) error {
 	if !duplicateReminder {
 		reminders = append(reminders, request.Reminder)
 	}
-	ro, rErr := json.Marshal(reminders)
-	if rErr != nil {
+
+	if rErr := p.storeRemindersForUsername(user.Username, reminders); rErr != nil {
 		p.API.LogError("failed to marshal reminders %s", user.Username)
 		return rErr
 	}
 
-	kvErr := p.API.KVSet(user.Username, ro)
-	if kvErr != nil {
-		p.API.LogDebug("failed stored username%s", kvErr)
-	}
 	return nil
 }
 
@@ -510,15 +469,10 @@ func (p *Plugin) DeleteReminder(userId string, reminder Reminder) error {
 		return uErr
 	}
 
-	bytes, bErr := p.API.KVGet(user.Username)
+	reminders, bErr := p.loadRemindersForUsername(user.Username)
 	if bErr != nil {
 		p.API.LogError("failed KVGet %s", bErr)
 		return bErr
-	}
-
-	var reminders []Reminder
-	if err := json.Unmarshal(bytes, &reminders); err != nil {
-		return err
 	}
 
 	var prunedReminders []Reminder
@@ -528,33 +482,21 @@ func (p *Plugin) DeleteReminder(userId string, reminder Reminder) error {
 		}
 	}
 
-	ro, rErr := json.Marshal(prunedReminders)
-
-	if rErr != nil {
+	if rErr := p.storeRemindersForUsername(user.Username, prunedReminders); rErr != nil {
 		p.API.LogError("failed to marshal reminders %s", user.Username)
 		return rErr
 	}
 
-	kvErr := p.API.KVSet(user.Username, ro)
-	if kvErr != nil {
-		p.API.LogDebug("failed stored username %s", kvErr)
-	}
 	return nil
 }
 
 func (p *Plugin) DeleteReminders(user *model.User) string {
 	T, _ := p.translation(user)
 
-	bytes, bErr := p.API.KVGet(user.Username)
+	reminders, bErr := p.loadRemindersForUsername(user.Username)
 	if bErr != nil {
 		p.API.LogError("failed KVGet %s", bErr)
 		return T("exception.response")
-	}
-
-	var reminders []Reminder
-	if err := json.Unmarshal(bytes, &reminders); err != nil {
-		p.API.LogError("failed json unmarshal %s", bErr)
-		return T("exception.reponse")
 	}
 
 	for _, r := range reminders {
@@ -567,7 +509,7 @@ func (p *Plugin) DeleteReminders(user *model.User) string {
 		}
 	}
 
-	dErr := p.API.KVDelete(user.Username)
+	dErr := p.deleteRemindersForUsername(user.Username)
 	if dErr != nil {
 		p.API.LogError("failed KVDelete %s", dErr)
 		return T("exception.response")
@@ -604,14 +546,9 @@ func (p *Plugin) rescheduleOccurrence(occurrence *Occurrence) {
 		p.upsertOccurrence(occurrence)
 	}
 
-	bytes, bErr := p.API.KVGet(user.Username)
+	reminders, bErr := p.loadRemindersForUsername(user.Username)
 	if bErr != nil {
 		p.API.LogError("failed KVGet %s", bErr)
-	}
-	var reminders []Reminder
-	rsErr := json.Unmarshal(bytes, &reminders)
-	if rsErr != nil {
-		p.API.LogError("failed json Unmarshal %s", rsErr)
 	}
 
 	reminder := p.findReminder(reminders, *occurrence)
