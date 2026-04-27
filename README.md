@@ -12,7 +12,7 @@ The original project is licensed under the Apache License 2.0. This fork keeps t
 
 ## Installation
 
-_Requires Mattermost Server v6.5.2 or greater._
+_Requires Mattermost Server v6.3.0 or greater._
 
 1. Download the release bundle for your Mattermost server.
 2. Upload the `.tar.gz` file in `System Console > Plugins > Management`.
@@ -44,8 +44,16 @@ Build the plugin executables and package them into a Mattermost upload bundle:
 make dist
 ```
 
+On Windows, build the server executables and package the bundle with:
+
+```powershell
+.\build\package.ps1
+```
+
 The final bundle is:
 
 ```text
 dist/ai.flexing.mattermost-plugin-remind-1.0.0.tar.gz
 ```
+
+The bundle includes Linux amd64/arm64, macOS amd64/arm64, and Windows amd64 server executables.

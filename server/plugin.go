@@ -49,7 +49,7 @@ func (p *Plugin) OnActivate() error {
 	botID, err := p.client.Bot.EnsureBot(&model.Bot{
 		Username:    botUserName,
 		DisplayName: botDisplayName,
-		Description: "Created by the GitHub plugin.",
+		Description: "Created by the Flexing Remind plugin.",
 	}, pluginapi.ProfileImagePath("assets/icon.png"))
 	if err != nil {
 		return errors.Wrap(err, "failed to ensure remind bot")

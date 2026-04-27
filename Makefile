@@ -121,6 +121,7 @@ endif
 ifneq ($(HAS_SERVER),)
 	mkdir -p dist/$(PLUGIN_ID)/server
 	cp -r server/dist dist/$(PLUGIN_ID)/server/
+	chmod 755 dist/$(PLUGIN_ID)/server/dist/plugin-linux-* dist/$(PLUGIN_ID)/server/dist/plugin-darwin-*
 endif
 ifneq ($(HAS_WEBAPP),)
 	mkdir -p dist/$(PLUGIN_ID)/webapp
