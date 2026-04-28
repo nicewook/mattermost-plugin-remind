@@ -358,3 +358,48 @@ func TestFindWhen(t *testing.T) {
 	})
 
 }
+
+func TestNormalizeTimeBareHHMM(t *testing.T) {
+	user := &model.User{
+		Email:    "-@-.-",
+		Nickname: "TestUser",
+		Password: model.NewId(),
+		Username: "testuser",
+		Roles:    model.SystemUserRoleId,
+		Locale:   "en",
+	}
+
+	api := &plugintest.API{}
+	api.On("LogDebug", mock.Anything, mock.Anything, mock.Anything).Maybe()
+	api.On("LogError", mock.Anything, mock.Anything, mock.Anything).Maybe()
+	api.On("LogInfo", mock.Anything).Maybe()
+	api.On("GetUserByUsername", mock.AnythingOfType("string")).Return(user, nil)
+
+	p := &Plugin{}
+	p.API = api
+
+	cases := []struct {
+		input        string
+		expectedHHMM string
+	}{
+		{"09:00", "09:00"},
+		{"9:00", "09:00"},
+		{"11:00", "11:00"},
+		{"12:00", "12:00"},
+		{"12:30", "12:30"},
+		{"13:30", "13:30"},
+		{"17:30", "17:30"},
+		{"21:00", "21:00"},
+		{"5:30pm", "17:30"},
+		{"9am", "09:00"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.input, func(t *testing.T) {
+			got, err := p.normalizeTime(tc.input, user)
+			assert.NoError(t, err)
+			// got looks like "HH:MM:SS+TZ" or "HH:MM:SS"; assert just the HH:MM prefix.
+			assert.Equal(t, tc.expectedHHMM, got[:5], "input=%q got=%q", tc.input, got)
+		})
+	}
+}

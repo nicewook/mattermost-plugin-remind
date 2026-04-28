@@ -414,13 +414,16 @@ func (p *Plugin) normalizeTime(text string, user *model.User) (string, error) {
 		}
 
 		return dateTimeSplit[1], nil
-	} else if match, _ := regexp.MatchString("(1[012]|[1-9]):[0-5][0-9]", t); match { // 12:30
+	} else if match, _ := regexp.MatchString("(1[012]|[1-9]):[0-5][0-9]", t); match { // 09:00, 12:30, 17:30 (24h, no am/pm marker)
 
-		nowkit := time.Now().In(location).Format(time.Kitchen)
-		ampm := string(nowkit[len(nowkit)-2:])
+		// Bare HH:MM without an am/pm marker is interpreted as 24-hour. Hours
+		// 1-11 default to AM; >=12 to PM. The previous implementation inherited
+		// the registrar's current AM/PM from time.Now(), which made "09:00"
+		// resolve to 09:00 or 21:00 depending on when the command was typed.
 		timeUnitSplit := strings.Split(t, ":")
 		hr, _ := strconv.Atoi(timeUnitSplit[0])
 
+		ampm := strings.ToUpper(T("am"))
 		if hr > 11 {
 			ampm = strings.ToUpper(T("pm"))
 		}
